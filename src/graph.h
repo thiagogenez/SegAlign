@@ -11,9 +11,7 @@ using namespace tbb::flow;
 
 struct Configuration {
     //FASTA files
-    std::string reference_filename;
-    std::string query_filename;
-    std::string data_folder;
+    std::string seq_filename;
     std::string strand;
 
     //Scoring
@@ -51,35 +49,33 @@ struct Configuration {
     bool debug;
 
     uint32_t num_threads;
-    uint32_t num_ref;
-    uint32_t num_query;
-
+    uint32_t num_chr;
+    uint32_t num_blocks;
+    uint32_t num_neighbor_intervals;
 };
 
 extern Configuration cfg;
 extern SeedPosTable *sa;
 
 struct reader_output {
-  size_t q_start;
-  size_t r_start;
-  uint32_t r_len;
-  uint32_t q_len;
+  size_t block_start;
+  uint32_t block_len;
   uint32_t block_index;
-  uint32_t r_block_index;
 };
 
 struct seed_interval {
-    uint32_t start;
-    uint32_t end;
+    uint32_t ref_start;
+    uint32_t ref_end;
+    uint32_t query_start;
+    uint32_t query_end;
     uint32_t num_invoked;
     uint32_t num_intervals;
-    uint32_t buffer;
 };
 
 typedef std::vector<segment> hsp_output; 
 
 typedef tbb::flow::tuple <reader_output, seed_interval> seeder_payload;
-typedef tbb::flow::tuple <int, hsp_output, hsp_output, uint32_t, size_t, size_t, size_t, size_t, size_t, uint32_t, uint32_t> printer_payload;
+typedef tbb::flow::tuple <int, hsp_output, hsp_output, size_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t> printer_payload;
 typedef tbb::flow::tuple <seeder_payload, size_t> seeder_input;
 typedef tbb::flow::tuple <printer_payload, size_t> printer_input;
 
@@ -90,7 +86,6 @@ struct seeder_body{
 	static std::atomic<uint64_t> num_seeds;
 	static std::atomic<uint64_t> num_hsps;
     static std::atomic<uint32_t> total_xdrop;
-    static std::atomic<uint32_t> num_seeded_regions[BUFFER_DEPTH];
 	printer_input operator()(seeder_input input);
 };
 
