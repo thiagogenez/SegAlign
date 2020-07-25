@@ -368,7 +368,7 @@ int main(int argc, char** argv){
             end_pos = seq_len-1-ref_block_start;
         }
 
-        ref_block_len = ref_block_end - ref_block_start; 
+        ref_block_len = ref_block_end - ref_block_start+1; 
         seq_block_start.push_back(ref_block_start);
         seq_block_len.push_back(ref_block_len);
         block_start += SEQ_BLOCK_SIZE;
@@ -403,15 +403,16 @@ int main(int argc, char** argv){
 
     total_intervals = interval_list.size();
 
-    for(int i = 8624; i < 8644; i++){
+    for(int i = 24; i < 43; i++){
         printf("%c", seq_DRAM->buffer[i]);
     }
     printf("\n");
 
-    for(int i = 8444; i < 8464; i++){
-        printf("%c", seq_DRAM->buffer[i]);
+    for(int i = 5491038; i < 5491057; i++){
+        printf("%c", seq_rc_DRAM->buffer[i]);
     }
     printf("\n");
+    printf("%u %u\n", seq_len, total_intervals);
 
     if(cfg.debug){
     	gettimeofday(&end_time, NULL);

@@ -31,12 +31,12 @@ printer_input seeder_body::operator()(seeder_input input) {
     uint32_t num_invoked   = interval_data.num_invoked;
     uint32_t num_intervals = interval_data.num_intervals;
 
-    size_t block_start   = chrom.block_start;
+    size_t   block_start   = chrom.block_start;
     uint32_t block_len   = chrom.block_len;
     uint32_t block_index = chrom.block_index;
 
-    uint32_t rc_query_start = seq_len - inter_query_end;
-    uint32_t rc_query_end   = seq_len - inter_query_start;
+    uint32_t rc_query_start = seq_len - 1 - inter_query_end;
+    uint32_t rc_query_end   = seq_len - 1 - inter_query_start;
 
     fprintf (stderr, "Chromosome block %u interval %u/%u (%u:%u)\n", block_index, num_invoked, num_intervals, inter_query_start, inter_query_end);
 
@@ -80,6 +80,8 @@ printer_input seeder_body::operator()(seeder_input input) {
             }
         }
     }
+
+    fprintf (stderr, "Chromosome block %u interval %u/%u (%u:%u)\n", block_index, num_invoked, num_intervals, rc_query_start, rc_query_end);
 
     if(cfg.strand == "minus" || cfg.strand == "both"){
         for (uint32_t i = rc_query_start; i < rc_query_end; i += cfg.wga_chunk_size) {

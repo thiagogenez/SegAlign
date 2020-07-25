@@ -73,28 +73,27 @@ void segment_printer_body::operator()(printer_input input, printer_node::output_
             fclose(segmentFile);
         }
 
-        /*
-        start_q_chr = std::upper_bound(chr_start.cbegin(), chr_start.cend(), block_start+inter_start) - rc_q_chr_start.cbegin() - 1; 
-        end_q_chr = std::upper_bound(chr_start.cbegin(), chr_start.cend(), q_block_start+rc_q_inter_end) - rc_q_chr_start.cbegin() - 1; 
+        start_q_chr = std::upper_bound(chr_start.cbegin(), chr_start.cend(), inter_query_start) - chr_start.cbegin();
+        end_q_chr   = std::upper_bound(chr_start.cbegin(), chr_start.cend(), inter_query_end) - chr_start.cbegin();
 
-        curr_q_chr_index = end_q_chr;
-        curr_q_chr = chr_name[curr_q_chr_index];
-        curr_q_chr_start = chr_start[curr_q_chr_index];
-        curr_q_chr_end = curr_q_chr_start + chr_len[curr_q_chr_index];
+        curr_q_chr_index = start_q_chr;
+        curr_q_chr = chr_name[start_q_chr];
+        curr_q_chr_start = chr_start[start_q_chr];
+        curr_q_chr_end = curr_q_chr_start + chr_len[start_q_chr];
 
         if(rc_segments.size() > 0){
-            base_filename = "tmp"+std::to_string(index)+".block"+std::to_string(block_index)+".r"+std::to_string(r_block_start)+".minus"; 
+            base_filename = "tmp"+std::to_string(index)+".block"+std::to_string(block_index)+".r"+std::to_string(block_start)+".minus"; 
             segment_filename = base_filename+".segments";
             segmentFile = fopen(segment_filename.c_str(), "w");
 
             for(int r = rc_segments.size()-1; r >= 0; r--){
                 auto e =  rc_segments[r];
-                size_t seg_r_start = e.ref_start + r_block_start;
-                size_t seg_q_start = e.query_start + q_block_start;
+                size_t seg_r_start = e.ref_start + block_start;
+                size_t seg_q_start = (e.query_start + block_start);
                 size_t r_index = std::upper_bound(chr_start.cbegin(), chr_start.cend(), seg_r_start) - chr_start.cbegin() - 1;
 
                 if(seg_q_start >= curr_q_chr_start && seg_q_start < curr_q_chr_end){
-                    out_str = chr_name[r_index] + '\t' + std::to_string(seg_r_start+1-r_chr_start[r_index]) + '\t' + std::to_string(seg_r_start+e.len+1-r_chr_start[r_index]) + '\t' + curr_q_chr + '\t' +  std::to_string(seg_q_start+1-curr_q_chr_start) + '\t' + std::to_string(seg_q_start+e.len+1-curr_q_chr_start) + "\t-\t" + std::to_string(e.score) + "\n";
+                    out_str = chr_name[r_index] + '\t' + std::to_string(seg_r_start+1-chr_start[r_index]) + '\t' + std::to_string(seg_r_start+e.len+1-chr_start[r_index]) + '\t' + curr_q_chr + '\t' +  std::to_string(seg_q_start+1-curr_q_chr_start) + '\t' + std::to_string(seg_q_start+e.len+1-curr_q_chr_start) + "\t-\t" + std::to_string(e.score) + "\n";
                 }
                 else{
 
@@ -108,11 +107,8 @@ void segment_printer_body::operator()(printer_input input, printer_node::output_
                 }
                 fprintf(segmentFile, "%s", out_str.c_str());
             }
-
             fclose(segmentFile);
         }
-            */
-
     }
 
     get<0>(op).try_put(token);
