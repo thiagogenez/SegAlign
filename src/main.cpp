@@ -95,6 +95,7 @@ int main(int argc, char** argv){
         ("step", po::value<uint32_t>(&cfg.step)->default_value(1), "Offset between the starting positions of successive target words considered for generating seed table")
         ("xdrop", po::value<int>(&cfg.xdrop)->default_value(910), "x-drop value for gap-free extension")
         ("hspthresh", po::value<int>(&cfg.hspthresh)->default_value(3000), "segment score threshold for high scoring pairs")
+        ("queryhsplimit", po::value<uint32_t>(&cfg.queryhsplimit)->default_value(-1), "segment score threshold for high scoring pairs")
         ("noentropy", po::bool_switch(&cfg.noentropy)->default_value(false), "don't adjust low score segment pair scores using entropy factor after filtering stage")
         ("nogapped", po::bool_switch(&cfg.gapped)->default_value(false), "don't perform gapped extension stage")
         ("ydrop", po::value<int>(&cfg.ydrop)->default_value(9430), "y-drop value for gapped extension")
@@ -403,16 +404,15 @@ int main(int argc, char** argv){
 
     total_intervals = interval_list.size();
 
-    for(int i = 24; i < 43; i++){
-        printf("%c", seq_DRAM->buffer[i]);
-    }
-    printf("\n");
-
-    for(int i = 5491038; i < 5491057; i++){
-        printf("%c", seq_rc_DRAM->buffer[i]);
-    }
-    printf("\n");
-    printf("%u %u\n", seq_len, total_intervals);
+//    for(int i = 24; i < 43; i++){
+//        printf("%c", seq_DRAM->buffer[i]);
+//    }
+//    printf("\n");
+//
+//    for(int i = 5491038; i < 5491057; i++){
+//        printf("%c", seq_rc_DRAM->buffer[i]);
+//    }
+//    printf("\n");
 
     if(cfg.debug){
     	gettimeofday(&end_time, NULL);

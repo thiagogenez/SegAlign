@@ -30,6 +30,7 @@ struct Configuration {
     int xdrop; 
     int hspthresh;
     bool noentropy;
+    uint32_t queryhsplimit;
 
     //Extension parameters
     bool gapped;

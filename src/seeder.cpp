@@ -1,5 +1,6 @@
 #include "graph.h"
 #include "store.h"
+#include <algorithm>
 
 std::atomic<uint64_t> seeder_body::num_seed_hits(0);
 std::atomic<uint64_t> seeder_body::num_seeds(0);
@@ -41,7 +42,7 @@ printer_input seeder_body::operator()(seeder_input input) {
     fprintf (stderr, "Chromosome block %u interval %u/%u (%u:%u)\n", block_index, num_invoked, num_intervals, inter_query_start, inter_query_end);
 
     if(cfg.strand == "plus" || cfg.strand == "both"){
-        for (uint32_t i = inter_query_start; i < inter_query_end; i += cfg.wga_chunk_size) {
+        for (uint32_t i = inter_query_start; i < inter_query_end && seeder_body::num_hsps.load() < cfg.queryhsplimit ; i += cfg.wga_chunk_size) {
 
             //end position
             uint32_t e = std::min(i + cfg.wga_chunk_size, inter_query_end);
@@ -81,10 +82,21 @@ printer_input seeder_body::operator()(seeder_input input) {
         }
     }
 
+    seeder_body::num_hsps = 0;
+    uint32_t plus_hsps = fw_segments.size();
+    uint32_t minus_hsps = 0;
+
+    if(plus_hsps >= cfg.queryhsplimit){
+        minus_hsps = 2;
+    }
+    else{
+        minus_hsps = cfg.queryhsplimit - plus_hsps;
+    }
+
     fprintf (stderr, "Chromosome block %u interval %u/%u (%u:%u)\n", block_index, num_invoked, num_intervals, rc_query_start, rc_query_end);
 
     if(cfg.strand == "minus" || cfg.strand == "both"){
-        for (uint32_t i = rc_query_start; i < rc_query_end; i += cfg.wga_chunk_size) {
+        for (uint32_t i = rc_query_start; i < rc_query_end && seeder_body::num_hsps.load() < minus_hsps; i += cfg.wga_chunk_size) {
             uint32_t e = std::min(i + cfg.wga_chunk_size, rc_query_end);
 
             std::vector<uint64_t> seed_offset_vector;
@@ -119,6 +131,23 @@ printer_input seeder_body::operator()(seeder_input input) {
     }
 
     seeder_body::total_xdrop += 1;
+    minus_hsps = rc_segments.size();
+
+    if(plus_hsps >= cfg.queryhsplimit){
+        if(minus_hsps > 2){
+            minus_hsps = 2;
+        }
+        rc_segments.resize(minus_hsps);
+        plus_hsps = cfg.queryhsplimit - minus_hsps;
+        fw_segments.resize(plus_hsps);
+    }
+    else{
+        if(minus_hsps > cfg.queryhsplimit - plus_hsps)
+            minus_hsps = cfg.queryhsplimit - plus_hsps;
+        rc_segments.resize(minus_hsps);
+    }
+
+    seeder_body::num_hsps = plus_hsps+minus_hsps;
 
     return printer_input(printer_payload(num_invoked, fw_segments, rc_segments, block_start, block_len, block_index, inter_ref_start, inter_ref_end, inter_query_start, inter_query_end), token);
 }

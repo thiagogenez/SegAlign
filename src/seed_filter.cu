@@ -329,9 +329,6 @@ void find_hits (const uint32_t* __restrict__  d_index_table, const uint32_t* __r
                 d_hsp[dram_address].query_start = query_loc; 
                 d_hsp[dram_address].len = 0;
                 d_hsp[dram_address].score = 0;
-//                if(d_hsp[dram_address].ref_start < 350)
-////                if(d_hsp[dram_address].ref_start < 10000 && d_hsp[dram_address].query_start < 3000)
-//                    printf("%u %u %d\n", ref_loc[warp_id], query_loc, d_hsp[dram_address].score);
             }
         }
     }
@@ -511,10 +508,6 @@ void find_hsps (const char* __restrict__  d_ref_seq, const char* __restrict__  d
             }
             __syncwarp();
 
-//            if(ref_loc[warp_id] == 8464 && query_loc[warp_id] == 8644)
-//                printf("%u %u %u %u %d %d %u %u\n", thread_id, pos_offset, ref_pos, query_pos, thread_score, max_thread_score, max_pos, xdrop_done);
-//            __syncwarp();
-
             if(lane_id == warp_size-1){
 
                 if(max_pos > prev_max_pos[warp_id])
@@ -562,10 +555,6 @@ void find_hsps (const char* __restrict__  d_ref_seq, const char* __restrict__  d
                 }
             }
             __syncwarp();
-
-//            if(ref_loc[warp_id] == 8464 && query_loc[warp_id] == 8644)
-//                printf("%u %u %u %u %d %d\n", count[0], count[1], count[2], count[3], pos_offset, prev_max_pos[warp_id]);
-//            __syncwarp();
 
         }
 
@@ -669,10 +658,6 @@ void find_hsps (const char* __restrict__  d_ref_seq, const char* __restrict__  d
             }
             __syncwarp();
 
-//            if(ref_loc[warp_id] == 43 && query_loc[warp_id] == 5491057)
-//                printf("%u %u %d %d %u %u %d %d %u %u %d\n", thread_id, pos_offset, r_chr, q_chr, ref_pos, query_pos, thread_score, max_thread_score, max_pos, xdrop_done, d_query_seq[0]);
-//            __syncwarp();
-
             if(lane_id == warp_size-1){
 
                 if(max_pos > prev_max_pos[warp_id])
@@ -752,8 +737,6 @@ void find_hsps (const char* __restrict__  d_ref_seq, const char* __restrict__  d
 
         if(hid < num_hits){
             if(lane_id == 0){
-//                if(query_loc[warp_id] <  350)
-//                    printf("%u %u %d %f %d %d\n", ref_loc[warp_id], query_loc[warp_id], total_score[warp_id], entropy[warp_id], d_query_seq[0], d_query_seq[query_len -1]);
 
                 if( ((int) (((float) total_score[warp_id])  * entropy[warp_id])) >= hspthresh){
                     d_hsp[hid].ref_start = ref_loc[warp_id] - left_extent[warp_id];
@@ -762,18 +745,10 @@ void find_hsps (const char* __restrict__  d_ref_seq, const char* __restrict__  d
                     if(entropy[warp_id] > 0)
                         d_hsp[hid].score = total_score[warp_id]*entropy[warp_id];
                     d_done[hid] = 1;
-
-//                    if(d_hsp[hid].ref_start < 350)
-//                        printf("%u %u %u %u %d %f\n", ref_loc[warp_id], query_loc[warp_id], d_hsp[hid].ref_start, d_hsp[hid].query_start, d_hsp[hid].score, entropy[warp_id]); 
-
-//                    if(ref_loc[warp_id] == 8464 && query_loc[warp_id] == 8644)
-//                        printf("%u %u %u %f\n", d_hsp[hid].ref_start, d_hsp[hid].query_start, d_hsp[hid].len, entropy[warp_id]); 
                 }
                 else{
                     d_hsp[hid].ref_start = ref_loc[warp_id];
                     d_hsp[hid].query_start = query_loc[warp_id];
-//                    if(d_hsp[hid].ref_start < 10000 && d_hsp[hid].query_start < 3000)// && d_hsp[hid].score == 11825)
-//                        printf("%u %u %d %f\n", ref_loc[warp_id], query_loc[warp_id], d_hsp[hid].score, entropy[warp_id]); 
                     d_hsp[hid].len = 0;
                     d_hsp[hid].score = 0;
                     d_done[hid] = 0;
@@ -891,7 +866,6 @@ std::vector<segment> SeedAndFilter (std::vector<uint64_t> seed_offset_vector, bo
                 thrust::device_vector<segment>::iterator result_end = thrust::unique_copy(d_hsp_reduced_vec[g].begin(), d_hsp_reduced_vec[g].begin()+num_anchors[i], d_hsp_vec[g].begin(),  hspEqual());
 
                 num_anchors[i] = thrust::distance(d_hsp_vec[g].begin(), result_end), num_anchors[i];
-//                printf("1 anchors %u\n", num_anchors[i]);
 
 //                total_anchors += num_anchors[i];
 //
@@ -904,7 +878,6 @@ std::vector<segment> SeedAndFilter (std::vector<uint64_t> seed_offset_vector, bo
                 thrust::device_vector<segment>::iterator result_end2 = thrust::unique_copy(d_hsp_vec[g].begin(), d_hsp_vec[g].begin()+num_anchors[i], d_hsp_reduced_vec[g].begin(),  hspDiagEqual());
 
                 num_anchors[i] = thrust::distance(d_hsp_reduced_vec[g].begin(), result_end2), num_anchors[i];
-//                printf("2 anchors %u\n", num_anchors[i]);
 
                 thrust::stable_sort(d_hsp_reduced_vec[g].begin(), d_hsp_reduced_vec[g].begin()+num_anchors[i], hspFinalComp());
 
@@ -1129,28 +1102,6 @@ void SendQueryWriteRequest (size_t start_addr, uint32_t len, uint32_t buffer){
         compress_string_rev_comp <<<MAX_BLOCKS, MAX_THREADS>>> (len, d_query_seq_tmp, d_query_seq[buffer*NUM_DEVICES+g], d_query_rc_seq[buffer*NUM_DEVICES+g]);
 
         check_cuda_memcpy((void*) ll, (void*)d_query_rc_seq[buffer*NUM_DEVICES+g], len*sizeof(char), cudaMemcpyDeviceToHost, "query_seq");
-
-        for(int i = 0; i < 40; i++){
-            printf("%c", seq_DRAM->buffer[start_addr+i]); 
-        }
-        printf("\n");
-
-        for(int i = 0; i < 40; i++){
-            printf("%d", ll[i]); 
-        }
-        printf("\n");
-
-        for(int i = len-40; i < len; i++){
-            printf("%c", seq_DRAM->buffer[start_addr+i]); 
-        }
-        printf("\n");
-
-        for(int i = len-40; i < len; i++){
-            printf("%d", ll[i]); 
-        }
-        printf("\n");
-
-        printf("%u\n", len);
 
         check_cuda_free((void*)d_query_seq_tmp, "d_query_seq_tmp");
     }
