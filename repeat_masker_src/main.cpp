@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp> 
 #include <iostream>
@@ -12,7 +11,8 @@
 #include "zlib.h"
 #include "graph.h"
 #include "ntcoding.h"
-#include "parameters.h"
+#include "seed_filter_interface.h"
+#include "seed_filter.h"
 #include "store.h"
 
 namespace po = boost::program_options;
@@ -66,17 +66,10 @@ int main(int argc, char** argv){
         ("hspthresh", po::value<int>(&cfg.hspthresh)->default_value(3000), "segment score threshold for high scoring pairs")
         ("noentropy", po::bool_switch(&cfg.noentropy)->default_value(false), "don't adjust low score segment pair scores using entropy factor after filtering stage");
 
-    po::options_description gapped_desc{"Gapped Extension Options"};
-    gapped_desc.add_options()
-        ("nogapped", po::bool_switch(&cfg.gapped)->default_value(false), "don't perform gapped extension stage");
-//        ("ydrop", po::value<int>(&cfg.ydrop)->default_value(9430), "y-drop value for gapped extension")
-//        ("gappedthresh", po::value<int>(&cfg.gappedthresh), "score threshold for gapped alignments")
-//        ("notrivial", po::bool_switch(&cfg.notrivial)->default_value(false), "Don't output a trivial self-alignment block if the target and query sequences are identical");
-
     po::options_description output_desc{"Output Options"};
     output_desc.add_options()
-//        ("format", po::value<std::string>(&cfg.output_format)->default_value("maf-"), "format of output file (same formats as provided by LASTZ) - lav, lav+text, axt, axt+, maf, maf+, maf-, sam, softsam, sam-, softsam-, cigar, BLASTN, differences, rdotplot, text")
         ("output", po::value<std::string>(&cfg.output), "output filename")
+        ("postprocess_cmd", po::value<std::string>(&cfg.cmd), "postprocessing command for each of the segment file of each query_interval, it is executed in parallel to reduce post-processing time")
         ("markend", po::bool_switch(&cfg.markend), "write a marker line just before completion");
 
     po::options_description system_desc{"System Options"};
@@ -93,7 +86,6 @@ int main(int argc, char** argv){
     all_options.add(scoring_desc);
     all_options.add(seeding_desc);
     all_options.add(ungapped_desc);
-    all_options.add(gapped_desc);
     all_options.add(output_desc);
     all_options.add(system_desc);
     all_options.add(hidden);
@@ -110,37 +102,24 @@ int main(int argc, char** argv){
         if(!vm.count("help")){
             if(!vm.count("seq_file")){
                 fprintf(stderr, "You must specify a sequence file \n"); 
+                std::cout << vm.count("help") << std::endl;
+                std::cout << vm.count("seq_file") << std::endl;
+                std::cout << cfg.seq_filename << std::endl;
             }
         }
 
         fprintf(stderr, "Usage: run_segalign_repeat_masker seq_file [options]\n\n"); 
-//        std::string last = "";
-//        int rep = 0;
-//        for(int i = 0; i < p.max_total_count(); i++){
-//            const std::string &n = p.name_for_position(i);
-//            if(n == last){
-//                if(!rep) std::cerr << " ...";
-//                if(rep++ > 1000) break;
-//            }
-//            else{
-//                std::cerr << " " << n;
-//                last = n;
-//                rep = 0;
-//            }
-//        }
-//        std::cerr << std::endl;
         std::cerr << desc << std::endl;
         std::cerr << scoring_desc << std::endl;
         std::cerr << seeding_desc << std::endl;
         std::cerr << ungapped_desc << std::endl;
-        std::cerr << gapped_desc << std::endl;
         std::cerr << output_desc << std::endl;
         std::cerr << system_desc << std::endl;
 	
-	if(vm.count("help"))
+        if(vm.count("help"))
             return 0;
-	else
-	    return 1;
+        else
+            return 1;
     }
 
     cfg.seed.transition = !cfg.seed.transition;
@@ -165,11 +144,6 @@ int main(int argc, char** argv){
     }
 
     cfg.seed.kmer_size = GenerateShapePos(cfg.seed.shape);
-
-    if(vm.count("gappedthresh") == 0)
-        cfg.gappedthresh = cfg.hspthresh; 
-
-    cfg.gapped = !cfg.gapped;
 
     int ambiguous_reward = -100;
     int ambiguous_penalty = -100;
@@ -254,6 +228,11 @@ int main(int argc, char** argv){
         cfg.sub_mat[E_NT*NUC+E_NT] = -10*cfg.xdrop;
     }
 
+    if(vm.count("postprocess_cmd"))
+        cfg.postprocess = true;
+    else
+        cfg.postprocess = false;
+
     cfg.num_threads = tbb::task_scheduler_init::default_num_threads();
     cfg.num_threads = (cfg.num_threads == 1) ? 2 : cfg.num_threads;
     tbb::task_scheduler_init init(cfg.num_threads);
@@ -265,9 +244,6 @@ int main(int argc, char** argv){
         fprintf(stderr, "Transition %d\n", cfg.seed.transition);
         fprintf(stderr, "xdrop %d\n", cfg.xdrop);
         fprintf(stderr, "HSP threshold %d\n", cfg.hspthresh);
-        fprintf(stderr, "Gapped %d\n",cfg.gapped);
-        fprintf(stderr, "ydrop %d\n", cfg.ydrop);
-        fprintf(stderr, "gapped threshold %d\n", cfg.gappedthresh);
 
         for(int i = 0; i < NUC; i++){
             for(int j = 0; j < NUC; j++){
@@ -279,7 +255,8 @@ int main(int argc, char** argv){
 
     fprintf(stderr, "Using %d threads\n", cfg.num_threads);
 
-    cfg.num_gpu = g_InitializeProcessor (cfg.num_gpu, cfg.seed.transition, cfg.wga_chunk_size, cfg.seed.size, cfg.sub_mat, cfg.xdrop, cfg.hspthresh, cfg.noentropy);
+    cfg.num_gpu = g_InitializeInterface (cfg.num_gpu);
+    g_InitializeProcessor (cfg.seed.transition, cfg.wga_chunk_size, cfg.seed.size, cfg.sub_mat, cfg.xdrop, cfg.hspthresh, cfg.noentropy);
 
     if(cfg.seq_block_size == DEFAULT_SEQ_BLOCK_SIZE){
         uint32_t offset = cfg.seq_block_size%cfg.lastz_interval_size;
@@ -515,10 +492,13 @@ int main(int argc, char** argv){
 
                 fprintf(stderr, "\nSending block %u ...\n", blocks_sent);
 
-                if(blocks_sent > 0)
-                    g_clearRef();
+                if(blocks_sent > 0){
+                    g_ClearRef();
+                    g_ClearQuery();
+                }
 
-                g_SendWriteRequest (seq_DRAM->buffer, send_block_start, send_block_len);
+                g_SendRefWriteRequest (seq_DRAM->buffer, send_block_start, send_block_len);
+                g_SendQueryWriteRequest ();
 
                 if(cfg.debug){
                     gettimeofday(&start_time_complete, NULL);

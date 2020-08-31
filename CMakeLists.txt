@@ -24,18 +24,22 @@ find_package(Boost COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 add_executable(segalign
-    src/DRAM.cpp
+    common/DRAM.cpp
+    common/ntcoding.cpp
+    common/seed_filter_interface.cu
+    common/seed_pos_table.cu
     src/seed_filter.cu
-    src/ntcoding.cpp
     src/seeder.cpp
     src/segment_printer.cpp
     src/main.cpp
     )
 
 add_executable(segalign_repeat_masker
-    repeat_masker_src/DRAM.cpp
+    common/DRAM.cpp
+    common/ntcoding.cpp
+    common/seed_filter_interface.cu
+    common/seed_pos_table.cu
     repeat_masker_src/seed_filter.cu
-    repeat_masker_src/ntcoding.cpp
     repeat_masker_src/seeder.cpp
     repeat_masker_src/segment_printer.cpp
     repeat_masker_src/main.cpp
@@ -56,3 +60,6 @@ target_compile_options(segalign_repeat_masker PRIVATE -DTBB_SUPPRESS_DEPRECATED_
 
 target_link_libraries(segalign PRIVATE ${LIBS})
 target_link_libraries(segalign_repeat_masker PRIVATE ${LIBS})
+
+target_include_directories(segalign PRIVATE ${PROJECT_SOURCE_DIR}/common/ ${PROJECT_SOURCE_DIR}/src/)
+target_include_directories(segalign_repeat_masker PRIVATE ${PROJECT_SOURCE_DIR}/common/ ${PROJECT_SOURCE_DIR}/repeat_masker_src/)

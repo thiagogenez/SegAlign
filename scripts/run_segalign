@@ -59,8 +59,10 @@ for ((i=0; i < $total_args; i++))
 
 if [ $hp -eq 1 ]; then
   segalign --help
+
 elif [ $# -eq 1 ] || [ $# -eq 0 ]; then
   segalign $1
+
 else
   refPath=$(readlink -f $1)
   queryPath=$(readlink -f $2)
@@ -136,16 +138,17 @@ else
   fi
 
   if [ $outf -eq 1 ]; then
-    touch $output_filename
 
-    for filename in `for i in tmp*.plus.*; do echo $i; done | sort -V`; do cat $filename>> $output_filename; done 
-    for filename in `for i in tmp*.minus.*; do echo $i; done | sort -V`; do cat $filename >> $output_filename; done 
+    > $output_filename
+
+    for filename in `for i in tmp*.plus.*; do echo $i; done | sort -V`; do cat $filename >> $output_filename && rm $filename; done
+    for filename in `for i in tmp*.minus.*; do echo $i; done | sort -V`; do cat $filename >> $output_filename && rm $filename; done
     if [ $mk -eq 1 ]; then
       echo "# segalign end-of-file" >> $output_filename
     fi
   else
-    for filename in `for i in tmp*.plus.*; do echo $i; done | sort -V`; do cat $filename; done 
-    for filename in `for i in tmp*.minus.*; do echo $i; done | sort -V`; do cat $filename; done 
+    for filename in `for i in tmp*.plus.*; do echo $i; done | sort -V`; do cat $filename && rm $filename; done
+    for filename in `for i in tmp*.minus.*; do echo $i; done | sort -V`; do cat $filename && rm $filename; done
     if [ $mk -eq 1 ]; then
       echo "# segalign end-of-file" 
     fi

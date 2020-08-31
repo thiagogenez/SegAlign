@@ -7,6 +7,10 @@
 #include <vector>
 #include "parameters.h"
 
+#define DEFAULT_SEQ_BLOCK_SIZE 1000000000
+#define DEFAULT_LASTZ_INTERVAL 10000000
+#define DEFAULT_WGA_CHUNK 250000
+
 using namespace tbb::flow;
 
 struct Seed_config {
@@ -16,7 +20,7 @@ struct Seed_config {
     bool transition;
 };
 
-struct segment {
+struct segmentPair {
     uint32_t ref_start;
     uint32_t query_start;
     uint32_t len;
@@ -48,15 +52,10 @@ struct Configuration {
     int hspthresh;
     bool noentropy;
 
-    // Extension parameters
-    bool gapped;
-    int ydrop;
-    int gappedthresh;
-    bool notrivial;
-
     // Output parameters
-    std::string output_format;
     std::string output;
+    std::string cmd;
+    bool postprocess;
     bool markend;
 
     // System parameters
@@ -85,7 +84,7 @@ struct seed_interval {
     uint32_t num_intervals;
 };
 
-typedef std::vector<segment> hsp_output; 
+typedef std::vector<segmentPair> hsp_output; 
 typedef tbb::flow::tuple <seq_block, seed_interval> seeder_payload;
 typedef tbb::flow::tuple <seq_block, int, hsp_output, hsp_output> printer_payload;
 typedef tbb::flow::tuple <seeder_payload, size_t> seeder_input;
