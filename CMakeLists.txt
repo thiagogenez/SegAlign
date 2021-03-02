@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 3.8)
+cmake_policy(SET CMP0074 NEW)
 
 project(segalign LANGUAGES CXX CUDA)
 project(segalign_repeat_masker LANGUAGES CXX CUDA)
@@ -11,6 +12,7 @@ set(CMAKE_CUDA_HOST_COMPILER_ENV_VAR "CUDAHOSTCXX")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O4 -std=c++11 -l c -lboost_program_options")
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_52")
+set(CMAKE_CUDA_ARCHITECTURES 52)
 
 include(${TBB_ROOT}/cmake/TBBBuild.cmake)
 tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS tbb_cpf=1)
@@ -53,10 +55,11 @@ set_target_properties(
     PROPERTIES 
       CUDA_SEPARABLE_COMPILATION ON
       CUDA_STANDARD 11
+      CUDA_ARCHITECTURES 52
       )
 
-target_compile_options(segalign PRIVATE -DTBB_SUPPRESS_DEPRECATED_MESSAGES)
-target_compile_options(segalign_repeat_masker PRIVATE -DTBB_SUPPRESS_DEPRECATED_MESSAGES)
+target_compile_options(segalign PRIVATE -DTBB_SUPPRESS_DEPRECATED_MESSAGES -DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT)
+target_compile_options(segalign_repeat_masker PRIVATE -DTBB_SUPPRESS_DEPRECATED_MESSAGES -DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT)
 
 target_link_libraries(segalign PRIVATE ${LIBS})
 target_link_libraries(segalign_repeat_masker PRIVATE ${LIBS})
