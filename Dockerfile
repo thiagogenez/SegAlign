@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.2-devel-centos7 as BUILDER
+FROM nvidia/cuda:11.0.3-devel-centos8 as BUILDER
 
 # Preparing the environment
 RUN yum clean all && yum --enablerepo=extras install -y epel-release && yum update -y
