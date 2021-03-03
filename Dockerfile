@@ -41,18 +41,18 @@ RUN cmake3 -DCMAKE_BUILD_TYPE=Release -DTBB_ROOT=${PWD}/../tbb2019_20191006oss -
 RUN make 
 RUN cp segalign* /usr/local/bin 
 RUN cp ../scripts/run_segalign* /usr/local/bin
-
+RUN cp /usr/local/src/SegAlign/tbb*/lib/intel64/gcc*/lib* /usr/local/lib/
 
 # Create a thinner final Docker image with only runtime dependencies
-FROM nvidia/cuda:10.2-runtime-centos7
+# FROM nvidia/cuda:10.2-runtime-centos7
 
 
 # Install runtime dependencies
-RUN yum clean all && yum update -y
-RUN yum install -y make zlib wget boost boost-devel krb5-libs
-RUN yum groupinstall "Development Tools" -y   
-RUN yum clean all
-RUN rm -rf /var/cache/yum/*
+#RUN yum clean all && yum update -y
+#RUN yum install -y make zlib wget boost boost-devel krb5-libs
+#RUN yum groupinstall "Development Tools" -y   
+#RUN yum clean all
+#RUN rm -rf /var/cache/yum/*
 
 # Installing Paralell (SegAlign's runtime dependency)
 WORKDIR /usr/local/src/
@@ -62,10 +62,10 @@ WORKDIR parallel-20201122
 RUN ./configure && make && make install
 
 # copy all the compiled binaries from BUILDER
-COPY --from=BUILDER /usr/local/bin /usr/local/bin
+#COPY --from=BUILDER /usr/local/bin /usr/local/bin
 
 # copy the tbb shared library
-COPY --from=BUILDER /usr/local/src/SegAlign/tbb*/lib/intel64/gcc*/lib* /usr/local/lib/
+#COPY --from=BUILDER /usr/local/src/SegAlign/tbb*/lib/intel64/gcc*/lib* /usr/local/lib/
 
 # add the library path
 ENV LD_LIBRARY_PATH="/usr/local/lib/:${LD_LIBRARY_PATH}"
